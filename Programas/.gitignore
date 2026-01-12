@@ -1,0 +1,28 @@
+# Dependencias
+node_modules/
+vendor/
+
+# Entornos virtuales (Python)
+.env/
+.venv/
+venv/
+
+# Archivos de logs
+*.log
+logs/
+
+# Archivos temporales del sistema/IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Builds y artefactos
+dist/
+build/
+out/
+
+# Archivos de configuración sensibles
+*.env
+*.secret
+*.key
