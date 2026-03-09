@@ -6,13 +6,15 @@ import re
 from collections import Counter
 from torch.utils.data import Dataset, DataLoader
 
+MIN_FREQ = 2 # Minimum frequency for a token to be included in the vocabulary
 MAX_LEN = 64 # Maximum sequence length
 BATCH_SIZE = 64 # Batch size for training
-EMBED_DIM  = 128   # Size of each word embedding vector
-HIDDEN_DIM = 256   # Number of LSTM hidden units per direction
-NUM_LAYERS = 2     # Number of stacked LSTM layers
-DROPOUT    = 0.4   # Dropout probability to reduce overfitting
-NUM_CLASSES = 3    # Bearish, Bullish, Neutral
+EMBED_DIM = 128 # Size of each word embedding vector
+HIDDEN_DIM = 256 # Number of LSTM hidden units per direction
+NUM_LAYERS = 2 # Number of stacked LSTM layers
+DROPOUT = 0.4 # Dropout probability to reduce overfitting
+NUM_CLASSES = 3 # Bearish, Bullish, Neutral
+EPOCHS = 10 # Number of training epochs
 
 class LSTM(nn.Module):
     """
@@ -124,6 +126,30 @@ def train_one_epoch(model, loader):
 
     return total_loss / total, correct / total
 
+def evaluate(model, loader):
+    """
+    Evaluates the model on the given data loader and returns the average loss, accuracy, and predictions.
+    """
+    model.eval() # Set model to evaluation mode
+    total_loss = correct = total = 0
+    all_preds, all_true = [], []
+
+    with torch.no_grad():  # Disable gradient computation to save memory
+        for X, y in loader:
+            X, y = X.to(device), y.to(device) # Move data to the same device as the model
+
+            logits = model(X) # Forward pass to get predictions
+            loss = criterion(logits, y) # Compute loss
+
+            # Accumulate loss and compute accuracy
+            total_loss += loss.item() * y.size(0)
+            preds = logits.argmax(1)
+            correct += (preds == y).sum().item()
+            total += y.size(0)
+            all_preds.extend(preds.cpu().numpy())
+            all_true.extend(y.cpu().numpy())
+
+    return total_loss / total, correct / total, all_preds, all_true
 
 
 # Load the training and validation datasets
@@ -139,9 +165,6 @@ train_df['clean'] = train_df['text'].apply(preprocess)
 valid_df['clean']  = valid_df['text'].apply(preprocess)
 
 # print(train_df[['text', 'clean']].head(3))
-
-# Keep only tokens that appear at least 2 times
-MIN_FREQ = 2
 
 # Tokenize and build vocabulary from the training data
 all_tokens = [tok for text in train_df['clean'] for tok in text.split()]
@@ -195,3 +218,35 @@ optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
 scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
     optimizer, mode='min', factor=0.5, patience=2
 )
+
+history = {'train_loss': [], 'val_loss': [], 'train_acc': [], 'val_acc': []}
+best_val_loss = float('inf')
+best_state = None
+
+print(f"\n{'Epoch':>6} {'Train Loss':>11} {'Train Acc':>10} {'Val Loss':>10} {'Val Acc':>9}")
+print("=" * 55)
+
+# Training loop over a specified number of epochs
+for epoch in range(1, EPOCHS + 1):
+    tr_loss, tr_acc = train_one_epoch(model, train_loader)
+    vl_loss, vl_acc, val_preds, val_true = evaluate(model, valid_loader)
+
+    # Adjust learning rate if val_loss stagnates
+    scheduler.step(vl_loss)
+
+    # Save metrics for plotting later
+    history['train_loss'].append(tr_loss)
+    history['train_acc'].append(tr_acc)
+    history['val_loss'].append(vl_loss)
+    history['val_acc'].append(vl_acc)
+
+    # Save best model checkpoint based on validation loss
+    if vl_loss < best_val_loss:
+        best_val_loss = vl_loss
+        best_state = {k: v.clone() for k, v in model.state_dict().items()}
+
+    print(f"{epoch:>6} {tr_loss:>11.4f} {tr_acc:>10.4f} {vl_loss:>10.4f} {vl_acc:>9.4f}")
+
+# Load best model before final evaluation
+model.load_state_dict(best_state)
+
