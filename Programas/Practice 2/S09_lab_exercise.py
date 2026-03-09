@@ -149,5 +149,21 @@ model = LSTM(
     pad_idx     = PAD_IDX
 ).to(device)
 
-print(f"Device: {device}")
-print(f"Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
+# print(f"Device: {device}")
+# print(f"Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
+
+# Calculate class weights based on the frequency of each class in the training data to handle class imbalance
+counts  = train_df['label'].value_counts().sort_index().values
+weights = torch.tensor(1.0 / counts, dtype=torch.float)
+weights = (weights / weights.sum()).to(device)
+
+# CrossEntropyLoss for multi-class classification, with class weights to handle class imbalance
+criterion = nn.CrossEntropyLoss(weight=weights)
+
+# Adam optimizer with weight decay for regularization to prevent overfitting
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-3, weight_decay=1e-5)
+
+# Scheduler to reduce the learning rate when the validation loss plateaus, which can help improve convergence
+scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+    optimizer, mode='min', factor=0.5, patience=2
+)
