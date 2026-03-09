@@ -4,9 +4,15 @@ import torch
 import torch.nn as nn
 import re
 from collections import Counter
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 
 MAX_LEN = 64 # Maximum sequence length
+BATCH_SIZE = 64 # Batch size for training
+EMBED_DIM  = 128   # Size of each word embedding vector
+HIDDEN_DIM = 256   # Number of LSTM hidden units per direction
+NUM_LAYERS = 2     # Number of stacked LSTM layers
+DROPOUT    = 0.4   # Dropout probability to reduce overfitting
+NUM_CLASSES = 3    # Bearish, Bullish, Neutral
 
 class LSTM(nn.Module):
     """
@@ -125,3 +131,23 @@ VOCAB_SIZE = len(vocab)
 
 # print(f"Vocabulary: {VOCAB_SIZE} tokens")
 
+train_loader = DataLoader(TweetDataset(train_df), batch_size=BATCH_SIZE, shuffle=True)
+valid_loader = DataLoader(TweetDataset(valid_df), batch_size=BATCH_SIZE, shuffle=False)
+
+# print(f"Train batches: {len(train_loader)}")
+# print(f"Valid batches: {len(valid_loader)}")
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+model = LSTM(
+    vocab_size  = VOCAB_SIZE,
+    embed_dim   = EMBED_DIM,
+    hidden_dim  = HIDDEN_DIM,
+    num_layers  = NUM_LAYERS,
+    num_classes = NUM_CLASSES,
+    dropout     = DROPOUT,
+    pad_idx     = PAD_IDX
+).to(device)
+
+print(f"Device: {device}")
+print(f"Trainable parameters: {sum(p.numel() for p in model.parameters() if p.requires_grad):,}")
