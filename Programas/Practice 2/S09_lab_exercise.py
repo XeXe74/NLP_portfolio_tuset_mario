@@ -4,6 +4,9 @@ import torch
 import torch.nn as nn
 import re
 from collections import Counter
+from torch.utils.data import Dataset
+
+MAX_LEN = 64 # Maximum sequence length
 
 class LSTM(nn.Module):
     """
@@ -43,6 +46,35 @@ class LSTM(nn.Module):
         final = torch.cat([hidden[-2], hidden[-1]], dim=1) # Concatenate the final forward and backward hidden states
 
         return self.fc(self.dropout(final))
+    
+    
+class TweetDataset(Dataset):
+    """
+    Function for creating a custom dataset for the tweets, which will be used for training and validation.
+    """
+    def __init__(self, df):
+        self.samples = []
+        
+        # Iterate through each row in the DataFrame
+        for _, row in df.iterrows():
+            tokens = row['clean'].split()[:MAX_LEN] # Tokenize the cleaned text and limit to MAX_LEN
+            ids    = [word2idx.get(t, UNK_IDX) for t in tokens] # Convert tokens to indices, using UNK_IDX for unknown tokens
+            ids   += [PAD_IDX] * (MAX_LEN - len(ids)) # Pad the sequence with PAD_IDX to ensure it has a length of MAX_LEN
+            self.samples.append((ids, int(row['label']))) # Store the token indices and label as a tuple
+
+    def __len__(self):
+        """
+        Returns the number of samples in the dataset.
+        """
+        return len(self.samples)
+
+    def __getitem__(self, idx):
+        """
+        Returns the input and label for a given index in the dataset.
+        """
+        ids, label = self.samples[idx]
+        return (torch.tensor(ids,   dtype=torch.long),
+                torch.tensor(label, dtype=torch.long))
     
     
 def preprocess(text):
@@ -91,4 +123,5 @@ PAD_IDX   = word2idx['<PAD>']   # 0
 UNK_IDX   = word2idx['<UNK>']   # 1
 VOCAB_SIZE = len(vocab)
 
-print(f"Vocabulary: {VOCAB_SIZE} tokens")
+# print(f"Vocabulary: {VOCAB_SIZE} tokens")
+
