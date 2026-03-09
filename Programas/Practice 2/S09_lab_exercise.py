@@ -72,4 +72,23 @@ valid_df = pd.read_csv('sent_valid.csv')
 train_df['clean'] = train_df['text'].apply(preprocess)
 valid_df['clean']  = valid_df['text'].apply(preprocess)
 
-print(train_df[['text', 'clean']].head(3))
+# print(train_df[['text', 'clean']].head(3))
+
+# Keep only tokens that appear at least 2 times
+MIN_FREQ = 2
+
+# Tokenize and build vocabulary from the training data
+all_tokens = [tok for text in train_df['clean'] for tok in text.split()]
+
+# Counting the frequency of each token in the training data
+counter = Counter(all_tokens)
+
+# <PAD> and <UNK> to handle padding and unknown tokens, respectively
+vocab    = ['<PAD>', '<UNK>'] + [w for w, c in counter.items() if c >= MIN_FREQ]
+word2idx = {w: i for i, w in enumerate(vocab)} # Mapping from word to index needed because LSTMs work with indices, not raw text
+
+PAD_IDX   = word2idx['<PAD>']   # 0
+UNK_IDX   = word2idx['<UNK>']   # 1
+VOCAB_SIZE = len(vocab)
+
+print(f"Vocabulary: {VOCAB_SIZE} tokens")
