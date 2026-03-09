@@ -3,10 +3,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import re
-
-# Load the dataset
-train = pd.read_csv('sent_train.csv')
-test = pd.read_csv('sent_valid.csv')
+from collections import Counter
 
 class LSTM(nn.Module):
     """
@@ -61,3 +58,18 @@ def preprocess(text):
     text = re.sub(r'\s+', ' ', text).strip() # Remove extra whitespace
     
     return text
+
+
+# Load the training and validation datasets
+train_df = pd.read_csv('sent_train.csv')
+valid_df = pd.read_csv('sent_valid.csv')
+
+# print(f"Train: {len(train_df)} muestras")
+# print(f"Valid: {len(valid_df)} muestras")
+# print(train_df['label'].value_counts().sort_index())
+
+# Preprocess the text data
+train_df['clean'] = train_df['text'].apply(preprocess)
+valid_df['clean']  = valid_df['text'].apply(preprocess)
+
+print(train_df[['text', 'clean']].head(3))
