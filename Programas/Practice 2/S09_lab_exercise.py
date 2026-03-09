@@ -97,6 +97,34 @@ def preprocess(text):
     
     return text
 
+def train_one_epoch(model, loader):
+    """
+    Trains the model for one epoch on the given data loader and returns the average loss and accuracy.
+    """
+    model.train()  # set model to training mode
+    total_loss = correct = total = 0
+
+    for X, y in loader:
+        X, y = X.to(device), y.to(device)
+
+        optimizer.zero_grad() # Clear gradients from the previous step
+        logits = model(X) # Forward pass to get predictions
+        loss   = criterion(logits, y) # Compute loss
+        loss.backward() # Backpropagate the loss to compute gradients
+
+        # Gradient clipping to prevent exploding gradients, which can occur in LSTMs
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+        optimizer.step() # Update weights
+
+        # Accumulate loss and compute accuracy
+        total_loss += loss.item() * y.size(0)
+        correct    += (logits.argmax(1) == y).sum().item()
+        total      += y.size(0)
+
+    return total_loss / total, correct / total
+
+
 
 # Load the training and validation datasets
 train_df = pd.read_csv('sent_train.csv')
