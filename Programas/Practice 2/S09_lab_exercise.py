@@ -2,6 +2,7 @@ from typing import Any
 import pandas as pd
 import torch
 import torch.nn as nn
+import re
 
 # Load the dataset
 train = pd.read_csv('sent_train.csv')
@@ -44,4 +45,19 @@ class LSTM(nn.Module):
 
         final = torch.cat([hidden[-2], hidden[-1]], dim=1) # Concatenate the final forward and backward hidden states
 
-        return self.fc(self.dropout(final)) 
+        return self.fc(self.dropout(final))
+    
+    
+def preprocess(text):
+    """
+    Function to preprocess the input text.
+    """
+    text = str(text).lower() # Convert to lowercase
+    text = re.sub(r'http\S+|www\S+', '', text) # Remove URLs
+    text = re.sub(r'@\w+', '', text) # Remove mentions
+    text = re.sub(r'\$[A-Za-z]+', '', text) # Remove stock symbols
+    text = re.sub(r'#', '', text) # Remove hashtags
+    text = re.sub(r'[^a-z0-9\s]', '', text) # Remove special characters
+    text = re.sub(r'\s+', ' ', text).strip() # Remove extra whitespace
+    
+    return text
