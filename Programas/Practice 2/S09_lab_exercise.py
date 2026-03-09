@@ -5,6 +5,9 @@ import torch.nn as nn
 import re
 from collections import Counter
 from torch.utils.data import Dataset, DataLoader
+from sklearn.metrics import classification_report, confusion_matrix
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 MIN_FREQ = 2 # Minimum frequency for a token to be included in the vocabulary
 MAX_LEN = 64 # Maximum sequence length
@@ -14,7 +17,7 @@ HIDDEN_DIM = 256 # Number of LSTM hidden units per direction
 NUM_LAYERS = 2 # Number of stacked LSTM layers
 DROPOUT = 0.4 # Dropout probability to reduce overfitting
 NUM_CLASSES = 3 # Bearish, Bullish, Neutral
-EPOCHS = 10 # Number of training epochs
+EPOCHS = 1 # Number of training epochs
 
 class LSTM(nn.Module):
     """
@@ -250,3 +253,23 @@ for epoch in range(1, EPOCHS + 1):
 # Load best model before final evaluation
 model.load_state_dict(best_state)
 
+# Final evaluation using the best model checkpoint
+_, _, final_preds, final_true = evaluate(model, valid_loader)
+
+label_names = ['Bearish', 'Bullish', 'Neutral']
+
+# Classification Report
+print("\nClassification Report:")
+print(classification_report(final_true, final_preds, target_names=label_names))
+
+# Confusion matrix 
+cm = confusion_matrix(final_true, final_preds)
+plt.figure(figsize=(6, 5))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+            xticklabels=label_names, yticklabels=label_names)
+plt.title('Confusion Matrix')
+plt.xlabel('Predicted')
+plt.ylabel('True')
+plt.tight_layout()
+plt.savefig('confusion_matrix.png')
+plt.show()
