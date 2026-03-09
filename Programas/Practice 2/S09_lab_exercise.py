@@ -17,7 +17,7 @@ HIDDEN_DIM = 256 # Number of LSTM hidden units per direction
 NUM_LAYERS = 2 # Number of stacked LSTM layers
 DROPOUT = 0.4 # Dropout probability to reduce overfitting
 NUM_CLASSES = 3 # Bearish, Bullish, Neutral
-EPOCHS = 1 # Number of training epochs
+EPOCHS = 7 # Number of training epochs
 
 class LSTM(nn.Module):
     """
