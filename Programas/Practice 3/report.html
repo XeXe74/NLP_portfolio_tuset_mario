@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Technical Report</title>
+            <style>
+/* From extension vscode.github */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.vscode-dark img[src$=\#gh-light-mode-only],
+.vscode-light img[src$=\#gh-dark-mode-only] {
+	display: none;
+}
+
+</style>
+            
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item {
+    list-style-type: none;
+}
+
+.task-list-item-checkbox {
+    margin-left: -20px;
+    vertical-align: middle;
+    pointer-events: none;
+}
+</style>
+<style>
+:root {
+  --color-note: #0969da;
+  --color-tip: #1a7f37;
+  --color-warning: #9a6700;
+  --color-severe: #bc4c00;
+  --color-caution: #d1242f;
+  --color-important: #8250df;
+}
+
+</style>
+<style>
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-note: #2f81f7;
+    --color-tip: #3fb950;
+    --color-warning: #d29922;
+    --color-severe: #db6d28;
+    --color-caution: #f85149;
+    --color-important: #a371f7;
+  }
+}
+
+</style>
+<style>
+.markdown-alert {
+  padding: 0.5rem 1rem;
+  margin-bottom: 16px;
+  color: inherit;
+  border-left: .25em solid #888;
+}
+
+.markdown-alert>:first-child {
+  margin-top: 0
+}
+
+.markdown-alert>:last-child {
+  margin-bottom: 0
+}
+
+.markdown-alert .markdown-alert-title {
+  display: flex;
+  font-weight: 500;
+  align-items: center;
+  line-height: 1
+}
+
+.markdown-alert .markdown-alert-title .octicon {
+  margin-right: 0.5rem;
+  display: inline-block;
+  overflow: visible !important;
+  vertical-align: text-bottom;
+  fill: currentColor;
+}
+
+.markdown-alert.markdown-alert-note {
+  border-left-color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-note .markdown-alert-title {
+  color: var(--color-note);
+}
+
+.markdown-alert.markdown-alert-important {
+  border-left-color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-important .markdown-alert-title {
+  color: var(--color-important);
+}
+
+.markdown-alert.markdown-alert-warning {
+  border-left-color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-warning .markdown-alert-title {
+  color: var(--color-warning);
+}
+
+.markdown-alert.markdown-alert-tip {
+  border-left-color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-tip .markdown-alert-title {
+  color: var(--color-tip);
+}
+
+.markdown-alert.markdown-alert-caution {
+  border-left-color: var(--color-caution);
+}
+
+.markdown-alert.markdown-alert-caution .markdown-alert-title {
+  color: var(--color-caution);
+}
+
+</style>
+        
+        </head>
+        <body class="vscode-body vscode-light">
+            <h1 id="technical-report">Technical Report</h1>
+<h1 id="local-rag-pdf-assistant">Local RAG PDF Assistant</h1>
+<p><strong>Mario Tuset</strong></p>
+<h2 id="1-problem-description">1. Problem Description</h2>
+<p>Accessing specific information from long documents such as PDFs or research papers can be difficult and is a time-consuming task. This application implements a local Question &amp; Answering system based on RAG architecture that provides a graphical interface where users can upload their PDFs and ask questions to retrieve information from them. The system autonomously retrives the most relevant text fragments and sends them to a local LLM, generating answers grounden in the provided document.</p>
+<h2 id="system-desing-and-workflow">System desing and workflow</h2>
+<p>The system follows a multi-step pipeline that it is divided into two phases:</p>
+<ul>
+<li>
+<p>Indexing Phase:
+The user uploads a PDF via the Streamlit sidebar and the PyPDFLoader extracts the text from the document. Then, RecursiveCharacterTextSplitter divides the text into chunks, where each chunk is vectorized using nomic-embed-text via Ollama. All obtained vectors are stored in a local FAISS index.</p>
+</li>
+<li>
+<p>Retrieval and Generation Phase:
+The user types a question in the Streamlit text input and it is vectorized using the same embedding model. FAISS performs a semantic similarity search and retrieves the top-k most relevant chunks and they are injected into a prompt template alongside the user's question. The local LLM generates the response and it is displayed in the Streamlit interface.</p>
+</li>
+</ul>
+<h2 id="model-selection">Model Selection</h2>
+<p>A two-model architecture was chosen, separating the retrieval and the generation tasks.</p>
+<ul>
+<li>
+<p>LLama 3 (8B):
+Smaller models like Gemma 1B were discarded because RAG demands strong capabilities, where the model must synthesize disconnected text fragments and respond only based on them. Llama 3 offers the best balanced between local hardware viability and reasoning performance, making it a good option for local RAG.</p>
+</li>
+<li>
+<p>Nomic-embed-text:
+This model was chosen because it is a dedicated embedding model trained for semantic search and retrieval task with a large context windows, allowing the application to capture the meaning of document chunk. Using a purpose-built embedding model is more efficient than repurposing a generative LLM for this task.</p>
+</li>
+</ul>
+<h2 id="implemenation-details">Implemenation Details</h2>
+<p>The application was built in Python combining useful libraries, each handling a specific part of the pipeline:</p>
+<p><strong>Streamlit</strong> provides the graphical interface where the user can upload its PDF, with the included sidebar, and ask the app a question with the chat input It was chosen for its simplicity and rapid implementation.</p>
+<p><strong>LangChain</strong> connects the PDF loader, text splitter, embedding model, vector store and LLM into a single pipeline.</p>
+<p><strong>Ollama</strong> runs both AI models locally withour requiring any cloud connetion.</p>
+<p><strong>FAISS</strong> stores the document chunks as vectors and retrieves the most relevant one for later user's questions.</p>
+<p><strong>PyPDFLoader</strong> and <strong>RecursiveCharacterTextSplitter</strong> handle document preproccessing. The splitter uses chunks of 1000 characters with an overlap of 200 to avoid losing context.</p>
+<p>Temporary files are deleted automatically after each PDF is processed.
+Cache resoruce ensures models are only loaded once at startup.</p>
+<h2 id="discussion-of-results-limitations-and-possible-improvements">Discussion of Results, Limitations and Possible Improvements</h2>
+<p>The system successfully answers the user's questions grounded in the uploaded PDF. It was tested with an academic document divided into 19 chunks. The model explicitly references the provided context in its answers confirming that the retrieval is working correctly and the LLM is nor relying on prior knowledge.</p>
+<p>Referring to the limitations, only one document can be loaded at the time and response speed depends on local hardware because the models runs locally. Also, PyPDFLoader cannot process scanned imaged-based PDFS.</p>
+<p>Some possible improvements can be adding multi-turn conversation history for a proper chat experience or integrating OCR support to handle scanned images. Also, support multiple simultaneous document uploads can be a good improvement for the system.</p>
+<h2 id="screenshots">Screenshots</h2>
+<p>Here is an example of the app working with a Bologna Process university assingment PDF uploaded and the user's query.</p>
+<p><strong>System response to the query &quot;What was the Bologna Process?&quot;:</strong>
+<img src="file:////Users/mariotg/Documents/UIE/Terceiro/Procesamiento del Lenguaje/Programas/Practice 3/app_test_image.png" alt="Assistant response grounded in PDF content"></p>
+
+            
+            
+        </body>
+        </html>
