@@ -2,11 +2,11 @@ import os
 import tempfile
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import OllamaEmbeddings
 from langchain_community.vectorstores import FAISS
 from langchain_community.llms import Ollama
-from langchain.chains import RetrievalQA
+from langchain_classic.chains import RetrievalQA
 
 # UI Configuration
 st.set_page_config(page_title="RAG PDF Assistant", layout="centered")
