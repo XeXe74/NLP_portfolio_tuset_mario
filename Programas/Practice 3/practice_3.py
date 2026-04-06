@@ -46,8 +46,29 @@ if uploaded_file is not None:
         # Split into chunks for LLM context window
         text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
         splits = text_splitter.split_documents(docs)
+        
+        # Create vector store for retrieval
+        vectorstore = FAISS.from_documents(splits, embeddings)
+        retriever = vectorstore.as_retriever()
+
+        # Set up RetrievalQA chain
+        qa_chain = RetrievalQA.from_chain_type(
+            llm=llm,
+            chain_type="stuff",
+            retriever=retriever
+        )
 
         st.success(f"PDF processed into {len(splits)} text chunks.")
 
     # Clean up temporary file
     os.remove(tmp_file_path)
+
+    # Input for user query
+    query = st.text_input("Ask a question about the document:")
+
+    # Generate response from the RAG chain
+    if query:
+        with st.spinner("Generating response..."):
+            response = qa_chain.invoke(query)
+            st.markdown("### 🤖 Assistant Response:")
+            st.info(response["result"])
