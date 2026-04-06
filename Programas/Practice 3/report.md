@@ -43,3 +43,18 @@ The application was built in Python combining useful libraries, each handling a 
 
 Temporary files are deleted automatically after each PDF is processed.
 Cache resoruce ensures models are only loaded once at startup.
+
+## Discussion of Results, Limitations and Possible Improvements
+
+The system successfully answers the user's questions grounded in the uploaded PDF. It was tested with an academic document divided into 19 chunks. The model explicitly references the provided context in its answers confirming that the retrieval is working correctly and the LLM is nor relying on prior knowledge.
+
+Referring to the limitations, only one document can be loaded at the time and response speed depends on local hardware because the models runs locally. Also, PyPDFLoader cannot process scanned imaged-based PDFS.
+
+Some possible improvements can be adding multi-turn conversation history for a proper chat experience or integrating OCR support to handle scanned images. Also, support multiple simultaneous document uploads can be a good improvement for the system.
+
+## Screenshots
+
+Here is an example of the app working with a Bologna Process university assingment PDF uploaded and the user's query.
+
+**System response to the query "What was the Bologna Process?":**
+![Assistant response grounded in PDF content](app_test_image.png)
