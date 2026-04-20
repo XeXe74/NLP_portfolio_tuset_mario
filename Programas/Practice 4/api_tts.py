@@ -18,7 +18,7 @@ def speak_api(text: str, lang: str = "es") -> str:
     tts.save(output_path)
 
     print(f"Audio generated in {output_path}")
-    os.system(f"afplay {output_path}") # Play the audio
+    os.system(f'afplay "{output_path}"') # Play the audio
     return output_path
 
 # Test
