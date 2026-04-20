@@ -28,12 +28,13 @@ def record_audio(duration: int = 5, sample_rate: int = 16000) -> str:
 
     return tmp.name
 
-def transcribe_local(audio_path: str) -> str:
+def transcribe_local(audio_path: str, translate: bool = False) -> str:
     """
     Transcribes an audio file using Whisper running fully locally.
     """
-    print("Transcribing...")
-    result = MODEL.transcribe(audio_path, language="es") # Transcribe with Whisper, specifying language
+    task = "translate" if translate else "transcribe"
+    print(f"{'Translating' if translate else 'Transcribing'}...")
+    result = MODEL.transcribe(audio_path, task=task)
     return result["text"]
 
 # Test
