@@ -2,6 +2,7 @@ import assemblyai as aai
 import sounddevice as sd
 import soundfile as sf
 import tempfile
+import os
 from config import ASSEMBLYAI_API_KEY
 
 # Set up Assembly
@@ -28,3 +29,23 @@ def record_audio(duration: int = 5, sample_rate: int = 16000) -> str:
     tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
     sf.write(tmp.name, audio, sample_rate)
     return tmp.name
+
+def transcribe_api(audio_path: str) -> str:
+    """
+    Transcribes an audio file by sending it to the AssemblyAI API.
+    """
+    print("Sending audio to AssemblyAI API...")
+
+    # Configure transcription settings
+    config = aai.TranscriptionConfig(
+        language_code="es",
+        speech_model=aai.SpeechModel.universal  # Universal mode for better accuracy across languages
+    )
+    result = transcriber.transcribe(audio_path, config=config) # Transcribe the audio file with the specified configuration
+    return result.text
+
+if __name__ == "__main__":
+    audio_file = record_audio(duration=5)
+    text = transcribe_api(audio_file)
+    print(f"\nTranscription: {text}")
+    os.remove(audio_file) # Clean up temporary file
