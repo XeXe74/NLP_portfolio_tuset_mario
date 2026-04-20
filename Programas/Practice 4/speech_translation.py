@@ -1,6 +1,7 @@
 from local_stt import record_audio, transcribe_local
 from local_tts import speak_local
 from api_tts import speak_api
+from sentimental_analysis import analyze_voice_sentiment
 
 def translate_and_speak(duration: int = 5, use_api_tts: bool = False) -> None:
     """
@@ -8,6 +9,10 @@ def translate_and_speak(duration: int = 5, use_api_tts: bool = False) -> None:
     """
     # Record audio
     audio_file = record_audio(duration)
+
+    # Analyze sentiment
+    sentiment = analyze_voice_sentiment(audio_file)
+    print(f"Detected sentiment: {sentiment}")
 
     # Transcribe and translate to English using Whisper locally
     translation = transcribe_local(audio_file, translate=True)
