@@ -1,13 +1,14 @@
-import assemblyai as aai
+import requests
+import time
 import sounddevice as sd
 import soundfile as sf
 import tempfile
 import os
 from config import ASSEMBLYAI_API_KEY
 
-# Set up Assembly
-aai.settings.api_key = ASSEMBLYAI_API_KEY
-transcriber = aai.Transcriber() # Create a transcriber instance to interact with the API
+# Variables for AssemblyAI API
+BASE_URL = "https://api.assemblyai.com"
+HEADERS = {"authorization": ASSEMBLYAI_API_KEY}
 
 def record_audio(duration: int = 5, sample_rate: int = 16000) -> str:
     """
@@ -30,19 +31,42 @@ def record_audio(duration: int = 5, sample_rate: int = 16000) -> str:
     sf.write(tmp.name, audio, sample_rate)
     return tmp.name
 
+def upload_audio(audio_path: str) -> str:
+    """
+    Uploads the audio file to AssemblyAI and returns the hosted URL.
+    """
+    with open(audio_path, "rb") as f:
+        response = requests.post(BASE_URL + "/v2/upload", headers=HEADERS, data=f)
+    return response.json()["upload_url"]
+
 def transcribe_api(audio_path: str) -> str:
     """
     Transcribes an audio file by sending it to the AssemblyAI API.
     """
     print("Sending audio to AssemblyAI API...")
 
-    # Configure transcription settings
-    config = aai.TranscriptionConfig(
-        language_code="es",
-        speech_model=aai.SpeechModel.universal  # Universal mode for better accuracy across languages
-    )
-    result = transcriber.transcribe(audio_path, config=config) # Transcribe the audio file with the specified configuration
-    return result.text
+    # Upload the audio file and get the URL
+    audio_url = upload_audio(audio_path)
+
+    # Submit transcription request
+    data = {
+        "audio_url": audio_url,
+        "speech_models": ["universal-3-pro", "universal-2"],
+        "language_code": "es"
+    }
+    # Get the API response with the transcript ID
+    response = requests.post(BASE_URL + "/v2/transcript", headers=HEADERS, json=data)
+    transcript_id = response.json()["id"]
+
+    # Poll until transcription is complete
+    polling_url = f"{BASE_URL}/v2/transcript/{transcript_id}"
+    while True:
+        result = requests.get(polling_url, headers=HEADERS).json()
+        if result["status"] == "completed":
+            return result["text"]
+        elif result["status"] == "error":
+            raise RuntimeError(f"Transcription failed: {result['error']}")
+        time.sleep(3)
 
 if __name__ == "__main__":
     audio_file = record_audio(duration=5)
